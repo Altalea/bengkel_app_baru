@@ -10,13 +10,12 @@ import 'history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String role;
-  final String username; // BARU: Variabel untuk menampung nama user asli
+  final String username;
 
-  // Kita tambahkan parameter username di sini
   const HomeScreen({
     super.key,
     this.role = 'Owner',
-    this.username = 'Admin' // Default nama kalau kosong
+    this.username = 'Admin'
   });
 
   @override
@@ -26,7 +25,15 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   void _navigateToSettings() {
-    Navigator.push(context, MaterialPageRoute(builder: (c) => SettingScreen(currentRole: widget.role)));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingScreen(
+          currentRole: widget.role,
+          currentUsername: widget.username, // KIRIM NAMA KE SETTING
+        ),
+      ),
+    );
   }
 
   @override
@@ -39,7 +46,6 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text("Bengkel App", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            // Tampilkan Nama User Asli di sini biar kelihatan kita login sebagai siapa
             Text("Halo, ${widget.username} (${widget.role})", style: const TextStyle(fontSize: 12)),
           ],
         ),
@@ -69,10 +75,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   if (widget.role != 'Pelanggan')
                     _buildMenuCard(context, icon: Icons.point_of_sale, title: "Kasir / Transaksi", isDark: isDark,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => AddTransactionScreen(mechanicName: widget.username))), // Kirim nama user sbg mekanik
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => AddTransactionScreen(mechanicName: widget.username))),
                     ),
 
-                  // KIRIM username ASLI KE SINI
                   _buildMenuCard(context, icon: Icons.history, title: widget.role == 'Pelanggan' ? "Riwayat Servis" : "Laporan Transaksi", isDark: isDark,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => HistoryScreen(role: widget.role, userName: widget.username))),
                   ),

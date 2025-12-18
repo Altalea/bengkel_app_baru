@@ -1,16 +1,18 @@
 class Employee {
   final int? id;
   final String name;
-  final String position; // Misal: Mekanik Senior, Kasir, dll
+  final String position;
   final String phone;
-  final String? imagePath; // Tambahan untuk foto
+  final String imagePath;
+  final String password; // BARU
 
   Employee({
     this.id,
     required this.name,
     required this.position,
     required this.phone,
-    this.imagePath,
+    required this.imagePath,
+    required this.password, // Wajib
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class Employee {
       'position': position,
       'phone': phone,
       'imagePath': imagePath,
+      'password': password,
     };
   }
 
@@ -29,7 +32,8 @@ class Employee {
       name: map['name'],
       position: map['position'],
       phone: map['phone'],
-      imagePath: map['imagePath'],
+      imagePath: map['imagePath'] ?? '',
+      password: map['password'] ?? '123456',
     );
   }
 }

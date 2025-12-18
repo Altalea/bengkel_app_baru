@@ -4,7 +4,6 @@ import '../customer_model.dart';
 
 class AddCustomerScreen extends StatefulWidget {
   const AddCustomerScreen({super.key});
-
   @override
   State<AddCustomerScreen> createState() => _AddCustomerScreenState();
 }
@@ -12,12 +11,12 @@ class AddCustomerScreen extends StatefulWidget {
 class _AddCustomerScreenState extends State<AddCustomerScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controller
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _vehicleController = TextEditingController();
   final _addressController = TextEditingController();
+  final _passController = TextEditingController(); // Controller Password
 
   Future<void> _saveCustomer() async {
     if (_formKey.currentState!.validate()) {
@@ -25,8 +24,9 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
         name: _nameController.text,
         phone: _phoneController.text,
         email: _emailController.text,
-        vehicleNumber: _vehicleController.text, // Plat Nomor
+        vehicleNumber: _vehicleController.text,
         address: _addressController.text,
+        password: _passController.text, // Simpan Password
       );
 
       await DatabaseHelper().insertCustomer(newCustomer);
@@ -49,6 +49,14 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
               TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: "Email")),
               TextFormField(controller: _vehicleController, decoration: const InputDecoration(labelText: "Nomor Plat Kendaraan")),
               TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: "Alamat")),
+              const SizedBox(height: 10),
+              // Input Password untuk Pelanggan Login
+              TextFormField(
+                controller: _passController,
+                decoration: const InputDecoration(labelText: "Buat Password"),
+                obscureText: true,
+                validator: (val) => val!.isEmpty ? "Password harus diisi" : null,
+              ),
               const SizedBox(height: 20),
               ElevatedButton(onPressed: _saveCustomer, child: const Text("SIMPAN"))
             ],

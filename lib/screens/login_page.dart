@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../database_helper.dart'; // Import Database
 import 'home_screen.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,26 +15,42 @@ class _LoginPageState extends State<LoginPage> {
 
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  void _login() {
-    // Validasi: Username tidak boleh kosong
-    if (_usernameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Harap isi Username!")),
-      );
+  Future<void> _login() async {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Isi Username & Password!")));
       return;
     }
 
-    // KIRIM DATA KE HOME
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(
-          role: _selectedRole,
-          username: _usernameController.text, // INI KUNCINYA: Mengirim apa yang kamu ketik
-        ),
-      ),
+    setState(() => _isLoading = true);
+
+    // CEK KE DATABASE
+    final user = await DatabaseHelper().loginUser(
+        _usernameController.text,
+        _passwordController.text,
+        _selectedRole
     );
+
+    setState(() => _isLoading = false);
+
+    if (user != null) {
+      // Login Sukses!
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(
+            role: _selectedRole,
+            username: user['name'], // Pakai nama asli dari database
+          ),
+        ),
+      );
+    } else {
+      // Login Gagal
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Login Gagal! Username/Password Salah.")),
+      );
+    }
   }
 
   @override
@@ -55,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 20),
                 const Text("BENGKEL APP", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
                 const SizedBox(height: 10),
-                const Text("Silakan masuk untuk melanjutkan", style: TextStyle(color: Colors.grey)),
+                const Text("Login System", style: TextStyle(color: Colors.grey)), // Penanda versi baru
                 const SizedBox(height: 40),
 
                 DropdownButtonFormField<String>(
@@ -70,14 +87,12 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // INPUT USERNAME
                 TextField(
                   controller: _usernameController,
                   decoration: InputDecoration(
-                    labelText: "Username (Nama Kamu)", // Hint biar jelas
+                    labelText: "Username",
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.person),
-                    helperText: "Jika Pelanggan, isi sesuai nama di nota transaksi",
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -97,14 +112,19 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _login,
+                    onPressed: _isLoading ? null : _login, // Matikan tombol saat loading
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text("MASUK", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("MASUK", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
+
+                const SizedBox(height: 20),
+                const Text("Default Owner: Admin / admin", style: TextStyle(color: Colors.grey, fontSize: 12)),
               ],
             ),
           ),

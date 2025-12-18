@@ -2,9 +2,10 @@ class Customer {
   final int? id;
   final String name;
   final String phone;
-  final String email;         // Baru
+  final String email;
   final String address;
-  final String vehicleNumber; // Baru (Plat Nomor)
+  final String vehicleNumber;
+  final String password; // BARU
 
   Customer({
     this.id,
@@ -13,6 +14,7 @@ class Customer {
     required this.email,
     required this.address,
     required this.vehicleNumber,
+    required this.password, // Wajib
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +25,7 @@ class Customer {
       'email': email,
       'address': address,
       'vehicleNumber': vehicleNumber,
+      'password': password,
     };
   }
 
@@ -34,6 +37,7 @@ class Customer {
       email: map['email'] ?? '-',
       address: map['address'],
       vehicleNumber: map['vehicleNumber'] ?? '-',
+      password: map['password'] ?? '123456', // Default kalau data lama kosong
     );
   }
 }

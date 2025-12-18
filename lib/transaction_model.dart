@@ -1,10 +1,11 @@
 class TransactionModel {
   final int? id;
-  final String customerName; // Nama Pelanggan
-  final String mechanicName; // Mekanik yang mengerjakan
-  final String date;         // Tanggal (misal: 19-12-2025)
-  final String items;        // Barang yg dibeli (misal: "Oli, Kampas Rem")
-  final double totalPrice;   // Total Rupiah
+  final String customerName;
+  final String mechanicName;
+  final String date;
+  final String items;
+  final double totalPrice;
+  final String status; // BARU: Menunggu, Proses, Selesai
 
   TransactionModel({
     this.id,
@@ -13,6 +14,7 @@ class TransactionModel {
     required this.date,
     required this.items,
     required this.totalPrice,
+    required this.status, // Wajib diisi
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +25,7 @@ class TransactionModel {
       'date': date,
       'items': items,
       'totalPrice': totalPrice,
+      'status': status,
     };
   }
 
@@ -34,6 +37,20 @@ class TransactionModel {
       date: map['date'],
       items: map['items'],
       totalPrice: map['totalPrice'],
+      status: map['status'] ?? 'Menunggu', // Default kalau null
+    );
+  }
+
+  // Helper untuk duplikasi objek dengan data baru (untuk update status)
+  TransactionModel copyWith({int? id, String? customerName, String? mechanicName, String? date, String? items, double? totalPrice, String? status}) {
+    return TransactionModel(
+      id: id ?? this.id,
+      customerName: customerName ?? this.customerName,
+      mechanicName: mechanicName ?? this.mechanicName,
+      date: date ?? this.date,
+      items: items ?? this.items,
+      totalPrice: totalPrice ?? this.totalPrice,
+      status: status ?? this.status,
     );
   }
 }

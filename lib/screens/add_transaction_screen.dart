@@ -5,7 +5,7 @@ import '../customer_model.dart';
 import '../transaction_model.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  final String mechanicName; // Nama mekanik yang login
+  final String mechanicName;
   const AddTransactionScreen({super.key, required this.mechanicName});
 
   @override
@@ -13,15 +13,10 @@ class AddTransactionScreen extends StatefulWidget {
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
-  // Data dari Database
   List<Customer> _customers = [];
-  List<Package> _packages = []; // Daftar Barang/Jasa
-
-  // Data Pilihan
+  List<Package> _packages = [];
   String? _selectedCustomerName;
   Package? _selectedPackageToAdd;
-
-  // Keranjang Belanja
   final List<Package> _cart = [];
   double _totalPrice = 0;
 
@@ -55,21 +50,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       return;
     }
 
-    // Gabungkan nama barang jadi satu string (misal: "Oli, Ban")
     String itemsString = _cart.map((e) => e.name).join(", ");
-    String dateNow = DateTime.now().toString().split(' ')[0]; // Ambil tanggal hari ini
+    String dateNow = DateTime.now().toString().split(' ')[0];
 
     final newTrx = TransactionModel(
       customerName: _selectedCustomerName!,
-      mechanicName: widget.mechanicName, // Diambil dari siapa yang login
+      mechanicName: widget.mechanicName,
       date: dateNow,
       items: itemsString,
       totalPrice: _totalPrice,
+      status: "Menunggu", // DEFAULT STATUS
     );
 
     await DatabaseHelper().insertTransaction(newTrx);
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Transaksi Berhasil Disimpan!")));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Transaksi Berhasil!")));
   }
 
   @override
@@ -80,7 +75,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // 1. PILIH PELANGGAN
             DropdownButtonFormField<String>(
               hint: const Text("Pilih Pelanggan"),
               value: _selectedCustomerName,
@@ -89,8 +83,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
-
-            // 2. PILIH BARANG
             Row(
               children: [
                 Expanded(
@@ -107,8 +99,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ],
             ),
             const SizedBox(height: 20),
-
-            // 3. DAFTAR BELANJA (KERANJANG)
             const Text("Daftar Item:", style: TextStyle(fontWeight: FontWeight.bold)),
             Expanded(
               child: ListView.builder(
@@ -123,9 +113,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 },
               ),
             ),
-
             const Divider(),
-            // 4. TOTAL & SIMPAN
             Text("TOTAL: Rp ${_totalPrice.toStringAsFixed(0)}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange)),
             const SizedBox(height: 10),
             SizedBox(

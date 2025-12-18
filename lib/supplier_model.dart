@@ -1,15 +1,15 @@
 class Supplier {
   final int? id;
   final String name;
-  final String mobile;
-  final String email;
+  final String phone;
+  final String email;     // Baru
   final String address;
-  final String category; // Misal: Sparepart, Oli, Ban
+  final String category;  // Baru (Misal: Oli, Ban, Sparepart)
 
   Supplier({
     this.id,
     required this.name,
-    required this.mobile,
+    required this.phone,
     required this.email,
     required this.address,
     required this.category,
@@ -19,7 +19,7 @@ class Supplier {
     return {
       'id': id,
       'name': name,
-      'mobile': mobile,
+      'phone': phone,
       'email': email,
       'address': address,
       'category': category,
@@ -30,10 +30,10 @@ class Supplier {
     return Supplier(
       id: map['id'],
       name: map['name'],
-      mobile: map['mobile'],
-      email: map['email'],
+      phone: map['phone'],
+      email: map['email'] ?? '-',
       address: map['address'],
-      category: map['category'],
+      category: map['category'] ?? '-',
     );
   }
 }

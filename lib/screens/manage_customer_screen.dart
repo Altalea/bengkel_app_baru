@@ -11,78 +11,45 @@ class ManageCustomerScreen extends StatefulWidget {
 }
 
 class _ManageCustomerScreenState extends State<ManageCustomerScreen> {
-  List<Customer> _customerList = [];
+  List<Customer> _list = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _refreshList();
+    _refresh();
   }
 
-  Future<void> _refreshList() async {
+  Future<void> _refresh() async {
     final data = await DatabaseHelper().getCustomers();
     setState(() {
-      _customerList = data;
+      _list = data;
       _isLoading = false;
     });
-  }
-
-  Future<void> _navigateToAdd() async {
-    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddCustomerScreen()));
-    if (result == true) _refreshList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text("My Customers", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 1,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
+      appBar: AppBar(title: const Text("Data Pelanggan")),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(builder: (c) => const AddCustomerScreen()));
+          _refresh();
+        },
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            SizedBox(
-              width: double.infinity, height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _navigateToAdd,
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text("Add Customer", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _customerList.isEmpty
-                  ? const Center(child: Text("Belum ada pelanggan."))
-                  : ListView.builder(
-                itemCount: _customerList.length,
-                itemBuilder: (context, index) {
-                  final c = _customerList[index];
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.blue.shade100,
-                        child: const Icon(Icons.person, color: Colors.blue, size: 20),
-                      ),
-                      title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text("Plat: ${c.vehicleNumber}\nHP: ${c.mobile}"), // Menampilkan Plat Nomor
-                      isThreeLine: true,
-                      trailing: const Icon(Icons.message, color: Colors.green), // Ikon Chat
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+      body: _isLoading ? const Center(child: CircularProgressIndicator()) : ListView.builder(
+        itemCount: _list.length,
+        itemBuilder: (context, index) {
+          final item = _list[index];
+          return ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.person)),
+            title: Text(item.name),
+            subtitle: Text("${item.phone}\n${item.vehicleNumber}"), // Tampilkan Plat Nomor
+            isThreeLine: true,
+          );
+        },
       ),
     );
   }

@@ -1,15 +1,15 @@
 class Customer {
   final int? id;
   final String name;
-  final String mobile;
-  final String email;
+  final String phone;
+  final String email;         // Baru
   final String address;
-  final String vehicleNumber; // KHUSUS: Plat Nomor Kendaraan
+  final String vehicleNumber; // Baru (Plat Nomor)
 
   Customer({
     this.id,
     required this.name,
-    required this.mobile,
+    required this.phone,
     required this.email,
     required this.address,
     required this.vehicleNumber,
@@ -19,7 +19,7 @@ class Customer {
     return {
       'id': id,
       'name': name,
-      'mobile': mobile,
+      'phone': phone,
       'email': email,
       'address': address,
       'vehicleNumber': vehicleNumber,
@@ -30,10 +30,10 @@ class Customer {
     return Customer(
       id: map['id'],
       name: map['name'],
-      mobile: map['mobile'],
-      email: map['email'],
+      phone: map['phone'],
+      email: map['email'] ?? '-',
       address: map['address'],
-      vehicleNumber: map['vehicleNumber'],
+      vehicleNumber: map['vehicleNumber'] ?? '-',
     );
   }
 }

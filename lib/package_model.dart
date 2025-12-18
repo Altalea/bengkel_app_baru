@@ -1,19 +1,12 @@
 class Package {
   final int? id;
-  final String name;       // Nama Barang/Jasa
-  final double price;      // Harga
-  final String type;       // Jenis: 'Servis' atau 'Sparepart'
-  final String? description; // Keterangan
+  final String name;
+  final double price;
+  final String type;
+  final String? description;
 
-  Package({
-    this.id,
-    required this.name,
-    required this.price,
-    required this.type,
-    this.description,
-  });
+  Package({this.id, required this.name, required this.price, required this.type, this.description});
 
-  // Convert ke Map (untuk simpan ke Database)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -24,7 +17,6 @@ class Package {
     };
   }
 
-  // Convert dari Map (untuk ambil dari Database)
   factory Package.fromMap(Map<String, dynamic> map) {
     return Package(
       id: map['id'],

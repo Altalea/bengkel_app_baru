@@ -29,62 +29,48 @@ class _ManagePackageScreenState extends State<ManagePackageScreen> {
   }
 
   Future<void> _navigateToAdd() async {
-    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddPackageScreen()));
-    if (result == true) _refreshList();
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddPackageScreen()),
+    );
+    if (result == true) {
+      _refreshList();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text("My Package", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 1,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
+      appBar: AppBar(title: const Text("Daftar Harga & Servis")),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToAdd,
+        backgroundColor: Colors.orange,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            SizedBox(
-              width: double.infinity, height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _navigateToAdd,
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text("Add Package", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _packageList.isEmpty
+          ? const Center(child: Text("Belum ada data."))
+          : ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _packageList.length,
+        itemBuilder: (context, index) {
+          final item = _packageList[index];
+          return Card(
+            child: ListTile(
+              leading: Icon(
+                item.type == 'Servis' ? Icons.build : Icons.shopping_bag,
+                color: Colors.orange,
+              ),
+              title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)), // PERBAIKAN DISINI
+              subtitle: Text("${item.type} • ${item.description ?? '-'}"),
+              trailing: Text(
+                "Rp ${item.price.toStringAsFixed(0)}",
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _packageList.isEmpty
-                  ? const Center(child: Text("Belum ada paket servis."))
-                  : ListView.builder(
-                itemCount: _packageList.length,
-                itemBuilder: (context, index) {
-                  final p = _packageList[index];
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.purple.shade100,
-                        child: const Icon(Icons.card_giftcard, color: Colors.purple, size: 20),
-                      ),
-                      title: Text(p.packageName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(p.description, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      trailing: Text(
-                        p.price,
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

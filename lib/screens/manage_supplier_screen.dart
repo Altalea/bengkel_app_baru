@@ -11,77 +11,44 @@ class ManageSupplierScreen extends StatefulWidget {
 }
 
 class _ManageSupplierScreenState extends State<ManageSupplierScreen> {
-  List<Supplier> _supplierList = [];
+  List<Supplier> _list = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _refreshList();
+    _refresh();
   }
 
-  Future<void> _refreshList() async {
+  Future<void> _refresh() async {
     final data = await DatabaseHelper().getSuppliers();
     setState(() {
-      _supplierList = data;
+      _list = data;
       _isLoading = false;
     });
-  }
-
-  Future<void> _navigateToAdd() async {
-    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddSupplierScreen()));
-    if (result == true) _refreshList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text("My Supplier", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 1,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
+      appBar: AppBar(title: const Text("Data Supplier")),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(builder: (c) => const AddSupplierScreen()));
+          _refresh();
+        },
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            SizedBox(
-              width: double.infinity, height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _navigateToAdd,
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text("Add Supplier", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _supplierList.isEmpty
-                  ? const Center(child: Text("Belum ada supplier."))
-                  : ListView.builder(
-                itemCount: _supplierList.length,
-                itemBuilder: (context, index) {
-                  final s = _supplierList[index];
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.red.shade100,
-                        child: const Icon(Icons.inventory, color: Colors.redAccent, size: 20),
-                      ),
-                      title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text("${s.category} • ${s.mobile}"),
-                      trailing: const Icon(Icons.phone, color: Colors.green),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+      body: _isLoading ? const Center(child: CircularProgressIndicator()) : ListView.builder(
+        itemCount: _list.length,
+        itemBuilder: (context, index) {
+          final item = _list[index];
+          return ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.local_shipping)),
+            title: Text(item.name),
+            subtitle: Text("${item.phone} • ${item.category}"), // Tampilkan Kategori
+          );
+        },
       ),
     );
   }

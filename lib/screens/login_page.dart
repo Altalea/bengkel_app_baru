@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart'; // Import home screen untuk navigasi setelah login
+import 'home_screen.dart'; // Pastikan import ini ada
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -9,22 +9,22 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  String? selectedRole;
-  final List<String> roles = ['Pemilik', 'Mekanik', 'Pelanggan'];
+  // Pilihan Role (Jabatan)
+  String _selectedRole = 'Owner';
+  final List<String> _roles = ['Owner', 'Mekanik', 'Pelanggan']; // Opsi yang tersedia
 
-  void _handleLogin() {
-    if (selectedRole == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Harap pilih peran (Role) dulu!")),
-      );
-      return;
-    }
+  // Controller untuk inputan (sementara dummy)
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-    // Navigasi ke HomeScreen membawa data Role
+  void _login() {
+    // LOGIKA LOGIN
+    // Di sini kita langsung pindah ke Home dan membawa data 'role'
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => HomeScreen(userRole: selectedRole!),
+        // PERBAIKAN: Gunakan parameter 'role', bukan 'userRole'
+        builder: (context) => HomeScreen(role: _selectedRole),
       ),
     );
   }
@@ -32,68 +32,98 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(Icons.car_repair, size: 80, color: Colors.orange),
-            const SizedBox(height: 16),
-            const Text(
-              "BENGKEL APP",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.orange),
-            ),
-            const SizedBox(height: 40),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo / Icon
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.car_repair, size: 80, color: Colors.orange),
+                ),
+                const SizedBox(height: 20),
 
-            // Input Username
-            TextField(
-              decoration: InputDecoration(
-                labelText: "Username",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.person),
-              ),
-            ),
-            const SizedBox(height: 16),
+                const Text(
+                  "BENGKEL APP",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                const SizedBox(height: 10),
+                const Text("Silakan masuk untuk melanjutkan", style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 40),
 
-            // Input Password
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.lock),
-              ),
-            ),
-            const SizedBox(height: 16),
+                // Pilihan Role
+                DropdownButtonFormField<String>(
+                  value: _selectedRole,
+                  decoration: InputDecoration(
+                    labelText: "Masuk Sebagai",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.badge),
+                  ),
+                  items: _roles.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedRole = newValue!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
 
-            // Pilihan Role
-            DropdownButtonFormField<String>(
-              value: selectedRole,
-              hint: const Text("Masuk Sebagai..."),
-              items: roles.map((role) {
-                return DropdownMenuItem(value: role, child: Text(role));
-              }).toList(),
-              onChanged: (value) => setState(() => selectedRole = value),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.people),
-              ),
-            ),
-            const SizedBox(height: 30),
+                // Input Username
+                TextField(
+                  controller: _usernameController,
+                  decoration: InputDecoration(
+                    labelText: "Username",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-            // Tombol Login (Warna Orange)
-            ElevatedButton(
-              onPressed: _handleLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange, // Sesuai tema
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text("MASUK", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                // Input Password
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.lock),
+                  ),
+                ),
+                const SizedBox(height: 30),
+
+                // Tombol Login
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      "MASUK",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

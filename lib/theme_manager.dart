@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Remote untuk ganti tema (Dark/Light)
+// Variabel global untuk menyimpan status tema
+// false = Terang, true = Gelap
 final ValueNotifier<bool> themeNotifier = ValueNotifier(false);

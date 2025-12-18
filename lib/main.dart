@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'theme_manager.dart';
+import 'theme_manager.dart';            // Import Remote
 import 'screens/login_page.dart';
 
 void main() {
@@ -12,6 +12,7 @@ class BengkelApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // PEMBUNGKUS UTAMA: Mendengarkan perubahan themeNotifier
     return ValueListenableBuilder<bool>(
       valueListenable: themeNotifier,
       builder: (context, isDark, child) {
@@ -19,7 +20,7 @@ class BengkelApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Bengkel App',
 
-          // TEMA TERANG
+          // --- KONFIGURASI TEMA TERANG ---
           theme: ThemeData(
             brightness: Brightness.light,
             primarySwatch: Colors.orange,
@@ -33,7 +34,7 @@ class BengkelApp extends StatelessWidget {
             ),
           ),
 
-          // TEMA GELAP
+          // --- KONFIGURASI TEMA GELAP ---
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.orange,
@@ -53,7 +54,9 @@ class BengkelApp extends StatelessWidget {
             ),
           ),
 
+          // PENTING: Inilah yang menentukan aplikasi pakai baju yang mana
           themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+
           home: const LoginPage(),
         );
       },

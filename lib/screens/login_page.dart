@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(
           builder: (context) => HomeScreen(
             role: _selectedRole,
-            username: user['name'], // Pakai nama asli dari database
+            username: user['name'],
           ),
         ),
       );
@@ -64,15 +64,25 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // KODE BARU (yang sudah diganti)
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: Colors.orange.shade50, shape: BoxShape.circle),
-                  child: const Icon(Icons.car_repair, size: 80, color: Colors.orange),
+                  padding: const EdgeInsets.all(20), // Padding bisa disesuaikan atau dihapus
+                  decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      shape: BoxShape.circle
+                  ),
+                  // Gunakan Image.asset untuk menampilkan gambarmu
+                  child: Image.asset(
+                    'assets/login_logo.png', // <-- Pastikan path-nya benar
+                    width: 100,              // Atur lebar gambar
+                    height: 100,             // Atur tinggi gambar
+                    fit: BoxFit.contain,     // Agar gambar tidak terpotong
+                  ),
                 ),
                 const SizedBox(height: 20),
-                const Text("BENGKEL APP", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+                const Text("BENGKEL PRO", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
                 const SizedBox(height: 10),
-                const Text("Login System", style: TextStyle(color: Colors.grey)), // Penanda versi baru
+                const Text("Silakan masuk untuk melanjutkan", style: TextStyle(color: Colors.grey)),
                 const SizedBox(height: 40),
 
                 DropdownButtonFormField<String>(
@@ -112,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login, // Matikan tombol saat loading
+                    onPressed: _isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -122,9 +132,7 @@ class _LoginPageState extends State<LoginPage> {
                         : const Text("MASUK", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
-
-                const SizedBox(height: 20),
-                const Text("Default Owner: Admin / admin", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                // Kode Text contekan password di sini sudah dihapus
               ],
             ),
           ),

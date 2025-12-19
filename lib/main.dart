@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'theme_manager.dart';            // Import Remote
 import 'screens/login_page.dart';
-
+import 'screens/splash_screen.dart';
 void main() {
   runApp(const BengkelApp());
 }
@@ -57,7 +57,7 @@ class BengkelApp extends StatelessWidget {
           // PENTING: Inilah yang menentukan aplikasi pakai baju yang mana
           themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
 
-          home: const LoginPage(),
+          home: const SplashScreen(),
         );
       },
     );

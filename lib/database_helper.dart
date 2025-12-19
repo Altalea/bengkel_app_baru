@@ -57,7 +57,7 @@ class DatabaseHelper {
     // --- BUAT AKUN OWNER DEFAULT (ADMIN) ---
     // Username: Admin, Password: admin
     await db.insert('employees', {
-      'name': 'Admin',
+      'name': 'Owner',
       'position': 'Owner',
       'phone': '08123456789',
       'imagePath': '',

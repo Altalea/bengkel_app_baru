@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../theme_manager.dart';
+import '../theme_manager.dart'; // Import ThemeManager Baru
 import '../database_helper.dart';
 import 'login_page.dart';
 
@@ -22,7 +22,7 @@ class SettingScreen extends StatefulWidget {
 class _SettingScreenState extends State<SettingScreen> {
   File? _profileImage;
 
-  // Fungsi Ganti Foto (Lokal sementara)
+  // Fungsi Ganti Foto
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -33,35 +33,66 @@ class _SettingScreenState extends State<SettingScreen> {
     }
   }
 
+  // --- FUNGSI GANTI NAMA (EDIT PROFIL) ---
+  void _showEditNameDialog() {
+    final nameController = TextEditingController(text: widget.currentUsername);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Ganti Nama"),
+        content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: "Nama Baru")
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isNotEmpty) {
+                // Update ke Database
+                await DatabaseHelper().updateUsername(
+                    widget.currentUsername,
+                    nameController.text,
+                    widget.currentRole
+                );
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Nama berhasil diubah! Silakan Login Ulang."))
+                );
+
+                // Langsung logout biar refresh
+                Future.delayed(const Duration(seconds: 1), () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                        (route) => false,
+                  );
+                });
+              }
+            },
+            child: const Text("Simpan"),
+          )
+        ],
+      ),
+    );
+  }
+
   // Fungsi Ganti Password
   void _showChangePasswordDialog() {
     final passController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Ganti Password"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Masukkan password baru anda:"),
-              const SizedBox(height: 10),
-              TextField(
-                controller: passController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Password Baru",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+          content: TextField(
+            controller: passController,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: "Password Baru"),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Batal"),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
             ElevatedButton(
               onPressed: () async {
                 if (passController.text.isNotEmpty) {
@@ -72,7 +103,7 @@ class _SettingScreenState extends State<SettingScreen> {
                   );
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Password Berhasil Diubah!")),
+                      const SnackBar(content: Text("Password Berhasil Diubah!"))
                   );
                 }
               },
@@ -86,9 +117,11 @@ class _SettingScreenState extends State<SettingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: themeNotifier,
-      builder: (context, isDark, child) {
+    return AnimatedBuilder(
+      animation: themeManager,
+      builder: (context, child) {
+        bool isDark = themeManager.isDark;
+
         return Scaffold(
           appBar: AppBar(title: const Text("Pengaturan")),
           body: ListView(
@@ -110,9 +143,21 @@ class _SettingScreenState extends State<SettingScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      widget.currentUsername,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+
+                    // Baris Nama + Tombol Edit
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.currentUsername,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
+                          onPressed: _showEditNameDialog, // Klik untuk ganti nama
+                          tooltip: "Ganti Nama",
+                        ),
+                      ],
                     ),
                     Text(
                       "Role: ${widget.currentRole}",
@@ -133,15 +178,6 @@ class _SettingScreenState extends State<SettingScreen> {
               ),
               const Divider(),
 
-              // --- MENU KHUSUS OWNER ---
-              if (widget.currentRole == 'Owner') ...[
-                const Text("Menu Pemilik", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-                const ListTile(
-                  leading: Icon(Icons.backup), title: Text("Backup Data"),
-                ),
-              ],
-              const Divider(),
-
               // --- UMUM ---
               const Text("Umum", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
               SwitchListTile(
@@ -150,7 +186,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 value: isDark,
                 activeColor: Colors.orange,
                 onChanged: (val) {
-                  themeNotifier.value = val;
+                  themeManager.toggleTheme(val); // SIMPAN PERMANEN
                 },
               ),
 
@@ -161,7 +197,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    themeNotifier.value = false;
+                    // Reset ke halaman login
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (context) => const LoginPage()),

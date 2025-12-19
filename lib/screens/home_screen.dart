@@ -7,6 +7,7 @@ import 'manage_supplier_screen.dart';
 import 'setting_screen.dart';
 import 'add_transaction_screen.dart';
 import 'history_screen.dart';
+import 'notification_screen.dart'; // IMPORT FILE BARU
 
 class HomeScreen extends StatefulWidget {
   final String role;
@@ -30,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (context) => SettingScreen(
           currentRole: widget.role,
-          currentUsername: widget.username, // KIRIM NAMA KE SETTING
+          currentUsername: widget.username,
         ),
       ),
     );
@@ -45,11 +46,22 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Bengkel App", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text("Bengkel Pro", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Text("Halo, ${widget.username} (${widget.role})", style: const TextStyle(fontSize: 12)),
           ],
         ),
-        actions: [IconButton(icon: const Icon(Icons.settings), onPressed: _navigateToSettings)],
+        actions: [
+          // TOMBOL NOTIFIKASI
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(
+                  builder: (c) => NotificationScreen(role: widget.role, username: widget.username)
+              ));
+            },
+          ),
+          IconButton(icon: const Icon(Icons.settings), onPressed: _navigateToSettings),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'theme_manager.dart';            // Import Remote
-import 'screens/login_page.dart';
 import 'screens/splash_screen.dart';
-void main() {
+import 'theme_manager.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await themeManager.loadTheme(); // LOAD TEMA
   runApp(const BengkelApp());
 }
 
@@ -12,51 +13,30 @@ class BengkelApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // PEMBUNGKUS UTAMA: Mendengarkan perubahan themeNotifier
-    return ValueListenableBuilder<bool>(
-      valueListenable: themeNotifier,
-      builder: (context, isDark, child) {
+    return AnimatedBuilder(
+      animation: themeManager,
+      builder: (context, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Bengkel App',
-
-          // --- KONFIGURASI TEMA TERANG ---
+          title: 'Bengkel Pro',
           theme: ThemeData(
-            brightness: Brightness.light,
             primarySwatch: Colors.orange,
-            scaffoldBackgroundColor: Colors.white,
-            textTheme: GoogleFonts.poppinsTextTheme(),
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: Colors.grey[100],
             appBarTheme: const AppBarTheme(
               backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
               elevation: 0,
-              iconTheme: IconThemeData(color: Colors.black),
-              titleTextStyle: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
-
-          // --- KONFIGURASI TEMA GELAP ---
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.orange,
             scaffoldBackgroundColor: const Color(0xFF121212),
-            textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF1F1F1F),
-              elevation: 0,
-              iconTheme: IconThemeData(color: Colors.white),
-              titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            inputDecorationTheme: InputDecorationTheme(
-              filled: true,
-              fillColor: const Color(0xFF2C2C2C),
-              labelStyle: const TextStyle(color: Colors.grey),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+            appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1E1E1E), foregroundColor: Colors.white),
+            cardColor: const Color(0xFF1E1E1E),
           ),
-
-          // PENTING: Inilah yang menentukan aplikasi pakai baju yang mana
-          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-
+          themeMode: themeManager.isDark ? ThemeMode.dark : ThemeMode.light,
           home: const SplashScreen(),
         );
       },

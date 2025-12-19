@@ -38,7 +38,8 @@ class DatabaseHelper {
     await db.execute('CREATE TABLE shops(id INTEGER PRIMARY KEY AUTOINCREMENT, shopName TEXT, address TEXT, ownerName TEXT, type TEXT, imagePath TEXT)');
     await db.execute('CREATE TABLE employees(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, position TEXT, phone TEXT, imagePath TEXT, password TEXT)');
     await db.execute('CREATE TABLE packages(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price REAL, type TEXT, description TEXT)');
-    await db.execute('CREATE TABLE customers(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, email TEXT, address TEXT, vehicleNumber TEXT, password TEXT)');
+    // UPDATE: Tambah kolom vehicleModel
+    await db.execute('CREATE TABLE customers(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, email TEXT, address TEXT, vehicleNumber TEXT, vehicleModel TEXT, password TEXT)');
     await db.execute('CREATE TABLE suppliers(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, email TEXT, address TEXT, category TEXT)');
     await db.execute('CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, customerName TEXT, mechanicName TEXT, date TEXT, items TEXT, totalPrice REAL, status TEXT)');
 
@@ -65,6 +66,24 @@ class DatabaseHelper {
     return null;
   }
 
+  // --- FITUR BARU: UPDATE PROFIL KENDARAAN ---
+  Future<int> updateVehicleProfile(String name, String number, String model) async {
+    final db = await database;
+    return await db.update(
+        'customers',
+        {'vehicleNumber': number, 'vehicleModel': model},
+        where: 'name = ?',
+        whereArgs: [name]
+    );
+  }
+
+  // --- FITUR BARU: AMBIL DETAIL PELANGGAN ---
+  Future<Map<String, dynamic>?> getCustomerDetail(String name) async {
+    final db = await database;
+    final res = await db.query('customers', where: 'name = ?', whereArgs: [name]);
+    return res.isNotEmpty ? res.first : null;
+  }
+
   // --- GANTI PASSWORD ---
   Future<int> changePassword(String name, String role, String newPassword) async {
     final db = await database;
@@ -75,7 +94,7 @@ class DatabaseHelper {
     }
   }
 
-  // --- UPDATE USERNAME (FITUR BARU) ---
+  // --- UPDATE USERNAME ---
   Future<int> updateUsername(String oldName, String newName, String role) async {
     final db = await database;
     if (role == 'Pelanggan') {

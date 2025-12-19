@@ -42,7 +42,7 @@ class DatabaseHelper {
     await db.execute('CREATE TABLE suppliers(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, email TEXT, address TEXT, category TEXT)');
     await db.execute('CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, customerName TEXT, mechanicName TEXT, date TEXT, items TEXT, totalPrice REAL, status TEXT)');
 
-    // Akun Default Owner
+    // Akun Default
     await db.insert('employees', {
       'name': 'Admin',
       'position': 'Owner',
@@ -52,7 +52,7 @@ class DatabaseHelper {
     });
   }
 
-  // LOGIN
+  // --- LOGIN ---
   Future<Map<String, dynamic>?> loginUser(String name, String password, String role) async {
     final db = await database;
     if (role == 'Pelanggan') {
@@ -65,7 +65,7 @@ class DatabaseHelper {
     return null;
   }
 
-  // GANTI PASSWORD
+  // --- GANTI PASSWORD ---
   Future<int> changePassword(String name, String role, String newPassword) async {
     final db = await database;
     if (role == 'Pelanggan') {
@@ -85,7 +85,7 @@ class DatabaseHelper {
     }
   }
 
-  // CRUD LAINNYA
+  // --- CRUD METHODS ---
   Future<int> insertShop(Shop shop) async { final db = await database; return await db.insert('shops', shop.toMap()); }
   Future<List<Shop>> getShops() async { final db = await database; final maps = await db.query('shops'); return List.generate(maps.length, (i) => Shop.fromMap(maps[i])); }
 

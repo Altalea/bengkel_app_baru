@@ -80,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16,
@@ -89,22 +88,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildMenuCard(context, icon: Icons.point_of_sale, title: "Kasir / Transaksi", isDark: isDark,
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => AddTransactionScreen(mechanicName: widget.username))),
                     ),
-
                   _buildMenuCard(context, icon: Icons.history, title: widget.role == 'Pelanggan' ? "Riwayat Servis" : "Laporan Transaksi", isDark: isDark,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => HistoryScreen(role: widget.role, userName: widget.username))),
                   ),
-
                   _buildMenuCard(context, icon: Icons.build, title: "Jasa & Harga", isDark: isDark,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ManagePackageScreen(role: widget.role))),
                   ),
-
                   if (widget.role == 'Owner') ...[
                     _buildMenuCard(context, icon: Icons.store, title: "Toko", isDark: isDark, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageShopScreen()))),
                     _buildMenuCard(context, icon: Icons.people, title: "Pegawai", isDark: isDark, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageEmployeeScreen()))),
                     _buildMenuCard(context, icon: Icons.person_outline, title: "Data Pelanggan", isDark: isDark, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageCustomerScreen()))),
                     _buildMenuCard(context, icon: Icons.local_shipping, title: "Supplier", isDark: isDark, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageSupplierScreen()))),
                   ],
-
                   if (widget.role == 'Mekanik')
                     _buildMenuCard(context, icon: Icons.person_outline, title: "Data Pelanggan", isDark: isDark, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageCustomerScreen()))),
                 ],

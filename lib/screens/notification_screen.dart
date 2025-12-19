@@ -24,14 +24,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
     List<Map<String, dynamic>> tempNotifs = [];
 
     if (widget.role == 'Owner') {
-      // 1. Cek Stok (Simulasi)
       tempNotifs.add({
         "title": "Peringatan Stok",
         "body": "Stok Oli dan Filter mulai menipis. Segera restock!",
         "icon": Icons.inventory,
         "color": Colors.red
       });
-      // 2. Ringkasan Harian
       final trx = await DatabaseHelper().getTransactions();
       tempNotifs.add({
         "title": "Ringkasan Harian",
@@ -41,7 +39,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
 
     } else if (widget.role == 'Mekanik') {
-      // Cek Pekerjaan Pending
       final trx = await DatabaseHelper().getTransactions();
       int pending = trx.where((t) => t.mechanicName == widget.username && t.status != 'Selesai').length;
 
@@ -60,9 +57,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           "color": Colors.blue
         });
       }
-
     } else if (widget.role == 'Pelanggan') {
-      // Cek Status Mobil
       final trx = await DatabaseHelper().getTransactionsByCustomer(widget.username);
       if (trx.isNotEmpty) {
         final latest = trx.first;
@@ -81,7 +76,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         });
       }
     }
-
     setState(() {
       _notifications = tempNotifs;
     });

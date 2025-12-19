@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../theme_manager.dart'; // Import ThemeManager Baru
+import '../theme_manager.dart';
 import '../database_helper.dart';
 import 'login_page.dart';
 
@@ -22,7 +22,6 @@ class SettingScreen extends StatefulWidget {
 class _SettingScreenState extends State<SettingScreen> {
   File? _profileImage;
 
-  // Fungsi Ganti Foto
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -33,7 +32,7 @@ class _SettingScreenState extends State<SettingScreen> {
     }
   }
 
-  // --- FUNGSI GANTI NAMA (EDIT PROFIL) ---
+  // DIALOG GANTI NAMA
   void _showEditNameDialog() {
     final nameController = TextEditingController(text: widget.currentUsername);
     showDialog(
@@ -49,19 +48,16 @@ class _SettingScreenState extends State<SettingScreen> {
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.isNotEmpty) {
-                // Update ke Database
                 await DatabaseHelper().updateUsername(
                     widget.currentUsername,
                     nameController.text,
                     widget.currentRole
                 );
-
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Nama berhasil diubah! Silakan Login Ulang."))
                 );
-
-                // Langsung logout biar refresh
+                // Logout otomatis
                 Future.delayed(const Duration(seconds: 1), () {
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -78,7 +74,7 @@ class _SettingScreenState extends State<SettingScreen> {
     );
   }
 
-  // Fungsi Ganti Password
+  // DIALOG GANTI PASSWORD
   void _showChangePasswordDialog() {
     final passController = TextEditingController();
     showDialog(
@@ -103,7 +99,7 @@ class _SettingScreenState extends State<SettingScreen> {
                   );
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Password Berhasil Diubah!"))
+                    const SnackBar(content: Text("Password Berhasil Diubah!")),
                   );
                 }
               },
@@ -117,6 +113,7 @@ class _SettingScreenState extends State<SettingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // PENTING: Gunakan AnimatedBuilder agar Switch Dark Mode bereaksi
     return AnimatedBuilder(
       animation: themeManager,
       builder: (context, child) {
@@ -127,7 +124,6 @@ class _SettingScreenState extends State<SettingScreen> {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // --- PROFIL ---
               Center(
                 child: Column(
                   children: [
@@ -143,8 +139,7 @@ class _SettingScreenState extends State<SettingScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-
-                    // Baris Nama + Tombol Edit
+                    // Nama & Tombol Edit
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -154,21 +149,15 @@ class _SettingScreenState extends State<SettingScreen> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
-                          onPressed: _showEditNameDialog, // Klik untuk ganti nama
-                          tooltip: "Ganti Nama",
+                          onPressed: _showEditNameDialog, // FITUR BARU
                         ),
                       ],
                     ),
-                    Text(
-                      "Role: ${widget.currentRole}",
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
+                    Text("Role: ${widget.currentRole}", style: TextStyle(color: Colors.grey[600])),
                   ],
                 ),
               ),
               const SizedBox(height: 30),
-
-              // --- KEAMANAN ---
               const Text("Keamanan", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
               ListTile(
                 leading: Icon(Icons.lock_reset, color: isDark ? Colors.white : Colors.black),
@@ -177,27 +166,23 @@ class _SettingScreenState extends State<SettingScreen> {
                 onTap: _showChangePasswordDialog,
               ),
               const Divider(),
-
-              // --- UMUM ---
               const Text("Umum", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+
+              // SWITCH DARK MODE (Permanen)
               SwitchListTile(
                 title: const Text("Mode Gelap"),
                 secondary: Icon(Icons.dark_mode, color: isDark ? Colors.white : Colors.grey),
                 value: isDark,
                 activeColor: Colors.orange,
                 onChanged: (val) {
-                  themeManager.toggleTheme(val); // SIMPAN PERMANEN
+                  themeManager.toggleTheme(val);
                 },
               ),
-
               const SizedBox(height: 20),
-
-              // --- LOGOUT ---
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // Reset ke halaman login
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (context) => const LoginPage()),

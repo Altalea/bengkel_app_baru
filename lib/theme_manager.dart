@@ -16,7 +16,7 @@ class ThemeManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // Ganti tema dan simpan
+  // Ganti tema dan simpan permanen
   Future<void> toggleTheme(bool value) async {
     _isDark = value;
     final prefs = await SharedPreferences.getInstance();

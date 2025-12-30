@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Pastikan tambah intl di pubspec.yaml jika belum
+import 'package:intl/intl.dart';
 import '../database_helper.dart';
+import '../transaction_model.dart'; // [PENTING] Tambahkan import ini
 import 'login_page.dart';
 
 class CustomerDashboard extends StatefulWidget {
@@ -34,13 +35,16 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   void _loadCatalog() async {
+    // getPackages sekarang mengembalikan List<Package> dari API
     final data = await DatabaseHelper().getPackages();
     setState(() {
+      // Kita ubah ke Map agar UI di bawah tidak perlu diubah banyak
       _catalog = data.map((e) => e.toMap()).toList();
     });
   }
 
   void _loadMechanics() async {
+    // getEmployees sekarang mengembalikan List<Employee> dari API
     final data = await DatabaseHelper().getEmployees();
     setState(() {
       _mechanicList = data
@@ -90,31 +94,39 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     // Gabung item jadi string
     String itemsStr = _cart.map((e) => e['name']).join(", ");
 
-    // Simpan ke Database (Status: Pending)
-    Map<String, dynamic> trx = {
-      'customerName': widget.username,
-      'mechanicName': _selectedMechanic,
-      'date': fullDate,
-      'items': itemsStr,
-      'totalPrice': _getTotalPrice(),
-      'status': 'Pending'
-    };
+    // --- [PERBAIKAN UTAMA DISINI] ---
+    // Gunakan TransactionModel, bukan Map.
+    TransactionModel newTrx = TransactionModel(
+      customerName: widget.username,
+      mechanicName: _selectedMechanic!,
+      date: fullDate,
+      items: itemsStr,
+      totalPrice: _getTotalPrice(),
+      status: 'Pending',
+    );
 
-    final db = await DatabaseHelper().database;
-    await db.insert('transactions', trx);
+    // Panggil fungsi API insertTransaction
+    bool success = await DatabaseHelper().insertTransaction(newTrx);
 
-    // Reset
-    setState(() {
-      _cart.clear();
-      _selectedDate = null;
-      _selectedTime = null;
-      _selectedMechanic = null;
-    });
+    if (success) {
+      // Reset Form jika berhasil
+      setState(() {
+        _cart.clear();
+        _selectedDate = null;
+        _selectedTime = null;
+        _selectedMechanic = null;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text("Booking Berhasil! Menunggu Konfirmasi Bengkel."),
-      backgroundColor: Colors.green,
-    ));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Booking Berhasil! Menunggu Konfirmasi Bengkel."),
+        backgroundColor: Colors.green,
+      ));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Gagal melakukan booking. Cek koneksi internet."),
+        backgroundColor: Colors.red,
+      ));
+    }
   }
 
   @override
@@ -132,6 +144,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
+              // Tambahkan logika logout API jika perlu
+              // await DatabaseHelper().logout();
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const LoginPage()));
             },
           )
@@ -311,7 +325,13 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     return FutureBuilder<Map<String, dynamic>?>(
         future: DatabaseHelper().getCustomerDetail(widget.username),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data == null) {
+            return const Center(child: Text("Gagal memuat data profil."));
+          }
 
           var data = snapshot.data!;
           vehicleNumCtrl.text = data['vehicleNumber'] ?? '';
@@ -340,8 +360,13 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
-                    await DatabaseHelper().updateVehicleProfile(widget.username, vehicleNumCtrl.text, vehicleModelCtrl.text);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profil Kendaraan Disimpan!")));
+                    // Cek koneksi API
+                    bool success = await DatabaseHelper().updateVehicleProfile(widget.username, vehicleNumCtrl.text, vehicleModelCtrl.text);
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profil Kendaraan Disimpan!")));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Gagal menyimpan profil."), backgroundColor: Colors.red));
+                    }
                   },
                   child: const Text("Simpan Data Kendaraan"),
                 )

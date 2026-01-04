@@ -1,5 +1,6 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Import semua model
 import 'shop_model.dart';
@@ -10,125 +11,263 @@ import 'supplier_model.dart';
 import 'transaction_model.dart';
 
 class DatabaseHelper {
+  // Ganti IP ini sesuai server Laravel Anda.
+  // Jika pakai Emulator Android: 'http://10.0.2.2:8000/api'
+  // Jika pakai HP fisik (satu wifi): 'http://192.168.x.x:8000/api'
+  // Jika sudah online: 'https://domain-anda.com/api'
+  static const String baseUrl = 'http://172.20.10.3:8000/api';
+
   static final DatabaseHelper _instance = DatabaseHelper._internal();
-  static Database? _database;
-
-  factory DatabaseHelper() {
-    return _instance;
-  }
-
+  factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+  // --- HELPER: Mengambil Header (Termasuk Token) ---
+  Future<Map<String, String>> _getHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token'); // Ambil token yang disimpan saat login
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
   }
 
-  Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'bengkel_v6.db');
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _onCreate,
-    );
-  }
+  // --- AUTH: LOGIN ---
+  Future<Map<String, dynamic>?> loginUser(String username, String password, String role) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/login'),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode({
+          'name': username, // Sesuaikan dengan field di Laravel (email/name)
+          'password': password,
+          'role': role,
+        }),
+      );
 
-  Future<void> _onCreate(Database db, int version) async {
-    await db.execute('CREATE TABLE shops(id INTEGER PRIMARY KEY AUTOINCREMENT, shopName TEXT, address TEXT, ownerName TEXT, type TEXT, imagePath TEXT)');
-    await db.execute('CREATE TABLE employees(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, position TEXT, phone TEXT, imagePath TEXT, password TEXT)');
-    await db.execute('CREATE TABLE packages(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, price REAL, type TEXT, description TEXT)');
-    // Kolom vehicleModel & vehicleNumber sudah ada di sini
-    await db.execute('CREATE TABLE customers(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, email TEXT, address TEXT, vehicleNumber TEXT, vehicleModel TEXT, password TEXT)');
-    await db.execute('CREATE TABLE suppliers(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, email TEXT, address TEXT, category TEXT)');
-    await db.execute('CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT, customerName TEXT, mechanicName TEXT, date TEXT, items TEXT, totalPrice REAL, status TEXT)');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-    // Akun Default Owner
-    await db.insert('employees', {
-      'name': 'Admin',
-      'position': 'Owner',
-      'phone': '08123456789',
-      'imagePath': '',
-      'password': 'admin',
-    });
-  }
+        // Simpan Token ke HP
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', data['token']);
 
-  // --- LOGIN ---
-  Future<Map<String, dynamic>?> loginUser(String name, String password, String role) async {
-    final db = await database;
-    if (role == 'Pelanggan') {
-      final res = await db.query('customers', where: 'name = ? AND password = ?', whereArgs: [name, password]);
-      if (res.isNotEmpty) return res.first;
-    } else {
-      final res = await db.query('employees', where: 'name = ? AND password = ? AND position = ?', whereArgs: [name, password, role]);
-      if (res.isNotEmpty) return res.first;
+        return data['user']; // Mengembalikan data user
+      }
+    } catch (e) {
+      print("Error Login: $e");
     }
     return null;
   }
 
-  // --- CUSTOMER PROFILE ---
-  Future<int> updateVehicleProfile(String name, String number, String model) async {
-    final db = await database;
-    return await db.update(
-        'customers',
-        {'vehicleNumber': number, 'vehicleModel': model},
-        where: 'name = ?',
-        whereArgs: [name]
+  // --- AUTH: LOGOUT (Opsional) ---
+  Future<void> logout() async {
+    final headers = await _getHeaders();
+    await http.post(Uri.parse('$baseUrl/logout'), headers: headers);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+  }
+
+  // --- CRUD: SHOPS ---
+  Future<List<Shop>> getShops() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/shops'), headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        // Laravel biasanya return: { "data": [...] }
+        final List data = jsonDecode(response.body)['data'];
+        return data.map((e) => Shop.fromMap(e)).toList();
+      }
+    } catch (e) {
+      print("Error getShops: $e");
+    }
+    return [];
+  }
+
+  Future<bool> insertShop(Shop shop) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/shops'),
+      headers: await _getHeaders(),
+      body: jsonEncode(shop.toMap()),
     );
+    return response.statusCode == 201 || response.statusCode == 200;
+  }
+
+  // --- CRUD: EMPLOYEES ---
+  Future<List<Employee>> getEmployees() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/employees'), headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body)['data'];
+        return data.map((e) => Employee.fromMap(e)).toList();
+      }
+    } catch (e) {
+      print("Error getEmployees: $e");
+    }
+    return [];
+  }
+
+  Future<bool> insertEmployee(Employee employee) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/employees'),
+      headers: await _getHeaders(),
+      body: jsonEncode(employee.toMap()),
+    );
+    return response.statusCode == 201;
+  }
+
+  // --- CRUD: PACKAGES / SERVICES ---
+  Future<List<Package>> getPackages() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/services'), headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body)['data'];
+        return data.map((e) => Package.fromMap(e)).toList();
+      }
+    } catch (e) {
+      print("Error getPackages: $e");
+    }
+    return [];
+  }
+
+  Future<bool> insertPackage(Package package) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/services'),
+      headers: await _getHeaders(),
+      body: jsonEncode(package.toMap()),
+    );
+    return response.statusCode == 201;
+  }
+
+  Future<bool> deletePackage(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/services/$id'),
+      headers: await _getHeaders(),
+    );
+    return response.statusCode == 200;
+  }
+
+  // --- CRUD: CUSTOMERS ---
+  Future<List<Customer>> getCustomers() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/customers'), headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body)['data'];
+        return data.map((e) => Customer.fromMap(e)).toList();
+      }
+    } catch (e) {
+      print("Error getCustomers: $e");
+    }
+    return [];
+  }
+
+  Future<bool> insertCustomer(Customer customer) async {
+    // Register customer baru (Endpoint public/register di Laravel)
+    final response = await http.post(
+      Uri.parse('$baseUrl/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(customer.toMap()),
+    );
+    return response.statusCode == 201;
   }
 
   Future<Map<String, dynamic>?> getCustomerDetail(String name) async {
-    final db = await database;
-    final res = await db.query('customers', where: 'name = ?', whereArgs: [name]);
-    return res.isNotEmpty ? res.first : null;
-  }
-
-  // --- GANTI PASSWORD & USERNAME ---
-  Future<int> changePassword(String name, String role, String newPassword) async {
-    final db = await database;
-    if (role == 'Pelanggan') {
-      return await db.update('customers', {'password': newPassword}, where: 'name = ?', whereArgs: [name]);
-    } else {
-      return await db.update('employees', {'password': newPassword}, where: 'name = ? AND position = ?', whereArgs: [name, role]);
+    // Di API, biasanya get profile berdasarkan Token, bukan nama parameter
+    final response = await http.get(Uri.parse('$baseUrl/user'), headers: await _getHeaders());
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
     }
+    return null;
   }
 
-  Future<int> updateUsername(String oldName, String newName, String role) async {
-    final db = await database;
-    if (role == 'Pelanggan') {
-      return await db.update('customers', {'name': newName}, where: 'name = ?', whereArgs: [oldName]);
-    } else {
-      return await db.update('employees', {'name': newName}, where: 'name = ?', whereArgs: [oldName]);
+  Future<bool> updateVehicleProfile(String name, String number, String model) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/profile/vehicle'), // Endpoint khusus update kendaraan
+      headers: await _getHeaders(),
+      body: jsonEncode({
+        'vehicleNumber': number,
+        'vehicleModel': model
+      }),
+    );
+    return response.statusCode == 200;
+  }
+
+  // --- CRUD: SUPPLIERS ---
+  Future<List<Supplier>> getSuppliers() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/suppliers'), headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body)['data'];
+        return data.map((e) => Supplier.fromMap(e)).toList();
+      }
+    } catch (e) {
+      print("Error getSuppliers: $e");
     }
+    return [];
   }
 
-  // --- CRUD (Create, Read, Update, Delete) ---
-
-  // Package / Jasa
-  Future<int> insertPackage(Package package) async { final db = await database; return await db.insert('packages', package.toMap()); }
-  Future<List<Package>> getPackages() async { final db = await database; final maps = await db.query('packages'); return List.generate(maps.length, (i) => Package.fromMap(maps[i])); }
-  Future<void> deletePackage(int id) async { final db = await database; await db.delete('packages', where: 'id = ?', whereArgs: [id]); }
-
-  // Employee
-  Future<int> insertEmployee(Employee employee) async { final db = await database; return await db.insert('employees', employee.toMap()); }
-  Future<List<Employee>> getEmployees() async { final db = await database; final maps = await db.query('employees'); return List.generate(maps.length, (i) => Employee.fromMap(maps[i])); }
-
-  // Transaction
-  // Perhatikan: insertTransaction mengembalikan int (ID transaksi), bukan bool
-  Future<int> insertTransaction(TransactionModel transaction) async {
-    final db = await database;
-    return await db.insert('transactions', transaction.toMap());
+  Future<bool> insertSupplier(Supplier supplier) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/suppliers'),
+      headers: await _getHeaders(),
+      body: jsonEncode(supplier.toMap()),
+    );
+    return response.statusCode == 201;
   }
 
-  Future<void> updateTransactionStatus(int id, String newStatus) async { final db = await database; await db.update('transactions', {'status': newStatus}, where: 'id = ?', whereArgs: [id]); }
-  Future<List<TransactionModel>> getTransactions() async { final db = await database; final maps = await db.query('transactions', orderBy: "id DESC"); return List.generate(maps.length, (i) => TransactionModel.fromMap(maps[i])); }
-  Future<List<TransactionModel>> getTransactionsByCustomer(String name) async { final db = await database; final maps = await db.query('transactions', where: 'customerName = ?', whereArgs: [name], orderBy: "id DESC"); return List.generate(maps.length, (i) => TransactionModel.fromMap(maps[i])); }
+  // --- CRUD: TRANSACTIONS ---
+  Future<List<TransactionModel>> getTransactions() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/transactions'), headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body)['data'];
+        return data.map((e) => TransactionModel.fromMap(e)).toList();
+      }
+    } catch (e) {
+      print("Error getTransactions: $e");
+    }
+    return [];
+  }
 
-  // Lainnya (Shop, Customer, Supplier)
-  Future<int> insertShop(Shop shop) async { final db = await database; return await db.insert('shops', shop.toMap()); }
-  Future<List<Shop>> getShops() async { final db = await database; final maps = await db.query('shops'); return List.generate(maps.length, (i) => Shop.fromMap(maps[i])); }
-  Future<int> insertCustomer(Customer customer) async { final db = await database; return await db.insert('customers', customer.toMap()); }
-  Future<List<Customer>> getCustomers() async { final db = await database; final maps = await db.query('customers'); return List.generate(maps.length, (i) => Customer.fromMap(maps[i])); }
-  Future<int> insertSupplier(Supplier supplier) async { final db = await database; return await db.insert('suppliers', supplier.toMap()); }
-  Future<List<Supplier>> getSuppliers() async { final db = await database; final maps = await db.query('suppliers'); return List.generate(maps.length, (i) => Supplier.fromMap(maps[i])); }
+  // Untuk Customer melihat history sendiri (Logic filter biasanya di Backend)
+  Future<List<TransactionModel>> getTransactionsByCustomer(String name) async {
+    // Endpoint sama, Backend yang filter berdasarkan Token user yang login
+    return await getTransactions();
+  }
+
+  Future<bool> insertTransaction(TransactionModel transaction) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/transactions'),
+      headers: await _getHeaders(),
+      body: jsonEncode(transaction.toMap()),
+    );
+    return response.statusCode == 201;
+  }
+
+  Future<bool> updateTransactionStatus(int id, String newStatus) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/transactions/$id/status'),
+      headers: await _getHeaders(),
+      body: jsonEncode({'status': newStatus}),
+    );
+    return response.statusCode == 200;
+  }
+
+  // --- SETTINGS: GANTI PASS / USERNAME ---
+  Future<bool> changePassword(String name, String role, String newPassword) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/profile/password'),
+      headers: await _getHeaders(),
+      body: jsonEncode({'password': newPassword}),
+    );
+    return response.statusCode == 200;
+  }
+
+  Future<bool> updateUsername(String oldName, String newName, String role) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/profile/name'),
+      headers: await _getHeaders(),
+      body: jsonEncode({'name': newName}),
+    );
+    return response.statusCode == 200;
+  }
 }

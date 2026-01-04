@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../database_helper.dart';
-import '../transaction_model.dart'; // Import Model Transaksi
+import '../transaction_model.dart'; // [PENTING] Tambahkan import ini
 import 'login_page.dart';
 
 class CustomerDashboard extends StatefulWidget {
@@ -13,7 +13,7 @@ class CustomerDashboard extends StatefulWidget {
 }
 
 class _CustomerDashboardState extends State<CustomerDashboard> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // 0: Katalog, 1: Keranjang, 2: Profil
 
   // Data Keranjang
   List<Map<String, dynamic>> _cart = [];
@@ -35,13 +35,16 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   void _loadCatalog() async {
+    // getPackages sekarang mengembalikan List<Package> dari API
     final data = await DatabaseHelper().getPackages();
     setState(() {
+      // Kita ubah ke Map agar UI di bawah tidak perlu diubah banyak
       _catalog = data.map((e) => e.toMap()).toList();
     });
   }
 
   void _loadMechanics() async {
+    // getEmployees sekarang mengembalikan List<Employee> dari API
     final data = await DatabaseHelper().getEmployees();
     setState(() {
       _mechanicList = data
@@ -51,20 +54,28 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     });
   }
 
+  // --- LOGIKA KERANJANG ---
   void _addToCart(Map<String, dynamic> item) {
-    setState(() => _cart.add(item));
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${item['name']} masuk keranjang!"), duration: const Duration(milliseconds: 500)));
+    setState(() {
+      _cart.add(item);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("${item['name']} masuk keranjang!"),
+      duration: const Duration(milliseconds: 500),
+    ));
   }
 
   void _removeFromCart(int index) {
-    setState(() => _cart.removeAt(index));
+    setState(() {
+      _cart.removeAt(index);
+    });
   }
 
   double _getTotalPrice() {
     return _cart.fold(0, (sum, item) => sum + (item['price'] as double));
   }
 
-  // --- PROSES CHECKOUT DIPERBAIKI ---
+  // --- PROSES CHECKOUT (BOOKING) ---
   void _checkout() async {
     if (_cart.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Keranjang kosong!")));
@@ -75,12 +86,16 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       return;
     }
 
+    // Format Tanggal & Jam
     String dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
     String timeStr = _selectedTime!.format(context);
     String fullDate = "$dateStr $timeStr";
+
+    // Gabung item jadi string
     String itemsStr = _cart.map((e) => e['name']).join(", ");
 
-    // Buat Objek Transaksi
+    // --- [PERBAIKAN UTAMA DISINI] ---
+    // Gunakan TransactionModel, bukan Map.
     TransactionModel newTrx = TransactionModel(
       customerName: widget.username,
       mechanicName: _selectedMechanic!,
@@ -90,11 +105,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       status: 'Pending',
     );
 
-    // Simpan ke Database (SQLite mengembalikan ID (int), bukan bool)
-    int resultId = await DatabaseHelper().insertTransaction(newTrx);
+    // Panggil fungsi API insertTransaction
+    bool success = await DatabaseHelper().insertTransaction(newTrx);
 
-    if (resultId > 0) {
-      // Jika ID > 0 berarti sukses
+    if (success) {
+      // Reset Form jika berhasil
       setState(() {
         _cart.clear();
         _selectedDate = null;
@@ -108,7 +123,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       ));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Gagal melakukan booking."),
+        content: Text("Gagal melakukan booking. Cek koneksi internet."),
         backgroundColor: Colors.red,
       ));
     }
@@ -116,7 +131,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> pages = [_buildCatalogPage(), _buildCartPage(), _buildProfilePage()];
+    final List<Widget> pages = [
+      _buildCatalogPage(),
+      _buildCartPage(),
+      _buildProfilePage(),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -124,7 +143,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const LoginPage())),
+            onPressed: () {
+              // Tambahkan logika logout API jika perlu
+              // await DatabaseHelper().logout();
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const LoginPage()));
+            },
           )
         ],
       ),
@@ -136,17 +159,24 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.store), label: "Katalog"),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: "Keranjang"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profil"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profil Kendaraan"),
         ],
       ),
     );
   }
 
+  // --- HALAMAN 1: KATALOG ---
   Widget _buildCatalogPage() {
     if (_catalog.isEmpty) return const Center(child: Text("Belum ada layanan tersedia."));
+
     return GridView.builder(
       padding: const EdgeInsets.all(10),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.8, crossAxisSpacing: 10, mainAxisSpacing: 10),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.8,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
       itemCount: _catalog.length,
       itemBuilder: (context, index) {
         final item = _catalog[index];
@@ -158,7 +188,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             children: [
               Expanded(
                 child: Container(
-                  decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: const BorderRadius.vertical(top: Radius.circular(12))),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  ),
                   child: const Icon(Icons.car_repair, size: 50, color: Colors.orange),
                 ),
               ),
@@ -170,7 +203,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
                     Text("Rp ${item['price']}", style: const TextStyle(color: Colors.green)),
                     const SizedBox(height: 5),
-                    SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white), onPressed: () => _addToCart(item), child: const Text("Tambah")))
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                        onPressed: () => _addToCart(item),
+                        child: const Text("Tambah"),
+                      ),
+                    )
                   ],
                 ),
               )
@@ -181,6 +221,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     );
   }
 
+  // --- HALAMAN 2: KERANJANG & BOOKING ---
   Widget _buildCartPage() {
     return Column(
       children: [
@@ -195,33 +236,80 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 leading: const Icon(Icons.check_circle, color: Colors.green),
                 title: Text(item['name']),
                 subtitle: Text("Rp ${item['price']}"),
-                trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _removeFromCart(index)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _removeFromCart(index),
+                ),
               );
             },
           ),
         ),
+
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Theme.of(context).cardColor, boxShadow: [BoxShadow(blurRadius: 5, color: Colors.grey.withOpacity(0.2))]),
+          decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              boxShadow: [BoxShadow(blurRadius: 5, color: Colors.grey.withOpacity(0.2))]
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("Detail Booking", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 10),
+
               DropdownButtonFormField<String>(
                 value: _selectedMechanic,
                 hint: const Text("Pilih Mekanik"),
                 items: _mechanicList.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
                 onChanged: (val) => setState(() => _selectedMechanic = val),
               ),
-              Row(children: [
-                Expanded(child: TextButton.icon(icon: const Icon(Icons.calendar_today), label: Text(_selectedDate == null ? "Pilih Tanggal" : DateFormat('dd MMM').format(_selectedDate!)), onPressed: () async { final date = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime(2026)); if(date != null) setState(() => _selectedDate = date); })),
-                Expanded(child: TextButton.icon(icon: const Icon(Icons.access_time), label: Text(_selectedTime == null ? "Pilih Jam" : _selectedTime!.format(context)), onPressed: () async { final time = await showTimePicker(context: context, initialTime: TimeOfDay.now()); if(time != null) setState(() => _selectedTime = time); })),
-              ]),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text(_selectedDate == null ? "Pilih Tanggal" : DateFormat('dd MMM').format(_selectedDate!)),
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2026)
+                        );
+                        if(date != null) setState(() => _selectedDate = date);
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.access_time),
+                      label: Text(_selectedTime == null ? "Pilih Jam" : _selectedTime!.format(context)),
+                      onPressed: () async {
+                        final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                        if(time != null) setState(() => _selectedTime = time);
+                      },
+                    ),
+                  ),
+                ],
+              ),
               const Divider(),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("Total:", style: TextStyle(fontWeight: FontWeight.bold)), Text("Rp ${_getTotalPrice()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.orange))]),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Total:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text("Rp ${_getTotalPrice()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.orange)),
+                ],
+              ),
               const SizedBox(height: 10),
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _checkout, style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 12)), child: const Text("BOOKING SEKARANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))))
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _checkout,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 12)),
+                  child: const Text("BOOKING SEKARANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              )
             ],
           ),
         )
@@ -229,6 +317,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     );
   }
 
+  // --- HALAMAN 3: PROFIL KENDARAAN ---
   Widget _buildProfilePage() {
     final vehicleNumCtrl = TextEditingController();
     final vehicleModelCtrl = TextEditingController();
@@ -236,7 +325,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     return FutureBuilder<Map<String, dynamic>?>(
         future: DatabaseHelper().getCustomerDetail(widget.username),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data == null) {
+            return const Center(child: Text("Gagal memuat data profil."));
+          }
+
           var data = snapshot.data!;
           vehicleNumCtrl.text = data['vehicleNumber'] ?? '';
           vehicleModelCtrl.text = data['vehicleModel'] ?? '';
@@ -249,16 +345,28 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 const SizedBox(height: 10),
                 Text(widget.username, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 30),
+
                 const Align(alignment: Alignment.centerLeft, child: Text("Detail Kendaraan", style: TextStyle(color: Colors.grey))),
                 const SizedBox(height: 10),
-                TextField(controller: vehicleModelCtrl, decoration: const InputDecoration(labelText: "Merk & Model", prefixIcon: Icon(Icons.car_rental), border: OutlineInputBorder())),
+                TextField(
+                  controller: vehicleModelCtrl,
+                  decoration: const InputDecoration(labelText: "Merk & Model (Cth: Honda Jazz 2020)", prefixIcon: Icon(Icons.car_rental), border: OutlineInputBorder()),
+                ),
                 const SizedBox(height: 15),
-                TextField(controller: vehicleNumCtrl, decoration: const InputDecoration(labelText: "Nomor Polisi", prefixIcon: Icon(Icons.confirmation_number), border: OutlineInputBorder())),
+                TextField(
+                  controller: vehicleNumCtrl,
+                  decoration: const InputDecoration(labelText: "Nomor Polisi (Cth: B 1234 CD)", prefixIcon: Icon(Icons.confirmation_number), border: OutlineInputBorder()),
+                ),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
-                    await DatabaseHelper().updateVehicleProfile(widget.username, vehicleNumCtrl.text, vehicleModelCtrl.text);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profil Kendaraan Disimpan!")));
+                    // Cek koneksi API
+                    bool success = await DatabaseHelper().updateVehicleProfile(widget.username, vehicleNumCtrl.text, vehicleModelCtrl.text);
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profil Kendaraan Disimpan!")));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Gagal menyimpan profil."), backgroundColor: Colors.red));
+                    }
                   },
                   child: const Text("Simpan Data Kendaraan"),
                 )
